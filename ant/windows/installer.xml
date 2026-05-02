@@ -142,7 +142,7 @@
 
         <!-- Sign the exe -->
         <antcall target="sign-file">
-            <param name="sign.file" value="${nsis.outfile}"/>
+            <param name="sign.file" value="&quot;${nsis.outfile}&quot;"/>
         </antcall>
     </target>
 

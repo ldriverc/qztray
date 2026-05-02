@@ -18,37 +18,37 @@ public class Constants {
     public static final Version JAVA_VERSION = JavaVersion.current();
     public static final String JAVA_VENDOR = System.getProperty("java.vendor");
 
-    /* QZ-Tray Constants */
+    /* Ventori Print Agent Constants */
     public static final String BLOCK_FILE = "blocked";
     public static final String ALLOW_FILE = "allowed";
     public static final String TEMP_FILE = "temp";
     public static final String LOG_FILE = "debug";
-    public static final String PROPS_FILE = "qz-tray"; // .properties extension is assumed
+    public static final String PROPS_FILE = "ventori-print-agent"; // .properties extension is assumed
     public static final String PREFS_FILE = "prefs"; // .properties extension is assumed
     public static final String[] PERSIST_PROPS = {"file.whitelist", "file.allow", "networking.hostname", "networking.port", STEAL_WEBSOCKET_PROPERTY };
     public static final String AUTOSTART_FILE = ".autostart";
-    public static final String DATA_DIR = "qz";
+    public static final String DATA_DIR = "ventori";
 
     public static final int BORDER_PADDING = 10;
 
-    public static final String ABOUT_TITLE = "QZ Tray";
-    public static final String ABOUT_EMAIL = "support@qz.io";
-    public static final String ABOUT_URL = "https://qz.io";
-    public static final String ABOUT_COMPANY = "QZ Industries, LLC";
-    public static final String ABOUT_CITY = "Canastota";
-    public static final String ABOUT_STATE = "NY";
-    public static final String ABOUT_COUNTRY = "US";
+    public static final String ABOUT_TITLE = "Ventori Print Agent";
+    public static final String ABOUT_EMAIL = "soporte@ventori.cl";
+    public static final String ABOUT_URL = "https://ventori.cl";
+    public static final String ABOUT_COMPANY = "Ventori SpA";
+    public static final String ABOUT_CITY = "Santiago";
+    public static final String ABOUT_STATE = "RM";
+    public static final String ABOUT_COUNTRY = "CL";
 
     public static final String ABOUT_LICENSING_URL = Constants.ABOUT_URL + "/licensing";
     public static final String ABOUT_SUPPORT_URL = Constants.ABOUT_URL + "/support";
     public static final String ABOUT_PRIVACY_URL = Constants.ABOUT_URL + "/privacy";
     public static final String ABOUT_DOWNLOAD_URL = Constants.ABOUT_URL + "/download";
 
-    public static final String VERSION_CHECK_URL = "https://api.github.com/repos/qzind/tray/releases";
-    public static final String VERSION_DOWNLOAD_URL = "https://github.com/qzind/tray/releases";
+    public static final String VERSION_CHECK_URL = "https://api.ventori.cl/agent/version";
+    public static final String VERSION_DOWNLOAD_URL = "https://app.ventori.cl/settings";
     public static final boolean ENABLE_DIAGNOSTICS = true; // Diagnostics menu (logs, etc)
 
-    public static final String BRAND_COLOR_HEX = "#44aa53";
+    public static final String BRAND_COLOR_HEX = "#6366f1";
     @SuppressWarnings("ConstantValue")
     public static final boolean IS_REBRANDED = !ABOUT_EMAIL.equals("support@qz.io");
 
