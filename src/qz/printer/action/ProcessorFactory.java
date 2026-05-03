@@ -13,7 +13,7 @@ public class ProcessorFactory implements KeyedPooledObjectFactory<PrintingUtilit
         switch(key) {
             case HTML: processor = new PrintHTML(); break;
             case IMAGE: processor = new PrintImage(); break;
-            case PDF: processor = new PrintPDF(); break;
+            case PDF: throw new UnsupportedOperationException("PDF support has been removed to reduce agent size.");
             case DIRECT: processor = new PrintDirect(); break;
             case COMMAND: default: processor = new PrintRaw(); break;
         }

@@ -403,6 +403,7 @@ public class JLink {
 
         if(ShellUtilities.execute(jlinkPath.toString(),
                                   "--strip-debug",
+                                  "--strip-native-commands",
                                   "--compress=2",
                                   "--no-header-files",
                                   "--no-man-pages",
