@@ -124,6 +124,14 @@
         </antcall>
     </target>
 
+    <target name="build-web-exe" depends="get-version,platform-detect,sign-nsis-plugins">
+        <!-- Web Installer (downloads payload) -->
+        <antcall target="config-compile-sign">
+            <param name="nsis.script.in" value="web-installer.nsi.in"/>
+            <param name="nsis.outfile" value="${out.dir}/${project.filename}-web-setup.exe"/>
+        </antcall>
+    </target>
+
     <target name="config-compile-sign" depends="find-nsisbin">
         <echo level="info">Creating ${nsis.outfile} using ${nsisbin}</echo>
 

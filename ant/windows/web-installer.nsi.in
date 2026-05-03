@@ -1,0 +1,154 @@
+!define MUI_BGCOLOR "SYSCLR:Window"
+!define MUI_TEXTCOLOR "SYSCLR:WindowText"
+!include MUI2.nsh
+!include x64.nsh
+!include LogicLib.nsh
+
+; Web Installer doesn't need much compression since it downloads most data
+SetCompressor /SOLID lzma
+
+!ifdef NSIS_UNICODE
+	!addplugindir "${plugins.path}/Release_Unicode"
+!else
+	!addplugindir "${plugins.path}/Release_ANSI"
+!endif
+!addincludedir "${basedir}/ant/windows/nsis/Include"
+!include FindJava.nsh
+!include StdUtils.nsh
+!include StrLoc.nsh
+
+; Application information
+!define /date YEAR %Y
+VIProductVersion "${build.nsis.version}"
+VIAddVersionKey "FileDescription" "${project.name} Web Installer"
+VIAddVersionKey "ProductName" "${project.name}"
+VIAddVersionKey "ProductVersion" "${build.version}"
+VIAddVersionKey "CompanyName" "${vendor.company}"
+VIAddVersionKey "LegalCopyright" "Copyright © ${YEAR}"
+VIAddVersionKey "LegalTrademarks" "${vendor.company}"
+
+Name "${project.name}"
+OutFile "${nsis.outfile}"
+RequestExecutionLevel admin
+
+!define MUI_ICON "${basedir}/assets/branding/windows-icon.ico"
+
+; Supabase Configuration
+!define SUPABASE_URL "https://frodfxwtrdpnpkfkdtub.supabase.co/storage/v1/object/public/agent-releases"
+!define JRE_URL "${SUPABASE_URL}/runtime-2.2.6.zip"
+!define JAR_URL "${SUPABASE_URL}/ventori-print-agent-2.2.6.jar"
+
+!insertmacro MUI_PAGE_WELCOME
+!insertmacro MUI_PAGE_DIRECTORY
+!insertmacro MUI_PAGE_INSTFILES
+!insertmacro MUI_UNPAGE_CONFIRM
+!insertmacro MUI_UNPAGE_INSTFILES
+!insertmacro MUI_LANGUAGE "English"
+
+!macro QzInstaller step option value
+    SetDetailsPrint textonly
+    DetailPrint "Running ${step}..."
+    SetDetailsPrint listonly
+    DetailPrint 'Running ${step}: "$java" ${install.opts} -jar "$OUTDIR\${project.filename}.jar" "${step}" "${option}" "${value}"'
+    SetDetailsPrint both
+    ClearErrors
+    nsExec::ExecToLog '"$java" ${install.opts} -jar "$OUTDIR\${project.filename}.jar" "${step}" "${option}" "${value}"'
+    Pop $0
+    ${If} "$0" != "0"
+        Abort "Installation failed during ${step} step.  Please check log for details."
+    ${EndIf}
+!macroend
+
+!macro VerifyJava jumpto
+    ; Test java executable
+    nsExec::ExecToLog '"$java" -version"'
+    Pop $0
+    ${If} "$0" == "0"
+        Goto Resume
+    ${EndIf}
+
+    ; Handle scenario where Java is bundled but broken
+    ${StrLoc} $R1 "$java" "runtime\bin" ">" 
+    ${If} $R1 != ""
+        SetDetailsPrint both
+        Abort  "Sorry, this version of ${project.name} cannot be installed on this system."
+    ${EndIf}
+    Resume:
+!macroend
+
+Section
+    ; Set environmental variable for silent install to be picked up by Java
+    ${If} ${Silent}
+      System::Call 'Kernel32::SetEnvironmentVariable(t, t)i ("${vendor.name}_silent", "1").r0'
+    ${EndIf}
+
+    ; Echo final destination to logs
+    SetOutPath $INSTDIR
+
+    ; Prepare payload folder
+    SetOutPath "$PLUGINSDIR\payload"
+    
+    DetailPrint "Conectando con el servidor de Ventori..."
+    
+    ; Download JAR
+    DetailPrint "Descargando componentes de la aplicación..."
+    nsExec::ExecToLog 'powershell -WindowStyle Hidden -Command "Invoke-WebRequest -Uri \"${JAR_URL}\" -OutFile \"$PLUGINSDIR\payload\${project.filename}.jar\""'
+    Pop $0
+    ${If} "$0" != "0"
+        Abort "Error al descargar el componente de la aplicación. Verifique su conexión a internet."
+    ${EndIf}
+
+    ; Download JRE Zip
+    DetailPrint "Descargando entorno de ejecución (Runtime)..."
+    nsExec::ExecToLog 'powershell -WindowStyle Hidden -Command "Invoke-WebRequest -Uri \"${JRE_URL}\" -OutFile \"$PLUGINSDIR\runtime.zip\""'
+    Pop $0
+    ${If} "$0" != "0"
+        Abort "Error al descargar el entorno de ejecución. Verifique su conexión a internet."
+    ${EndIf}
+
+    ; Extract JRE
+    DetailPrint "Instalando entorno de ejecución..."
+    nsExec::ExecToLog 'powershell -WindowStyle Hidden -Command "Expand-Archive -Path \"$PLUGINSDIR\runtime.zip\" -DestinationPath \"$PLUGINSDIR\payload\runtime\" -Force"'
+    Pop $0
+    ${If} "$0" != "0"
+        Abort "Error al instalar el entorno de ejecución."
+    ${EndIf}
+
+    ; Set the $java variable
+    TryAgain:
+    Push "$OUTDIR"
+    Call FindJava
+    !insertmacro VerifyJava "TryAgain"
+
+    ; Run preinstall tasks
+    SetDetailsPrint both
+    !insertmacro QzInstaller "preinstall" "" ""
+
+    ; Run install tasks
+    !insertmacro QzInstaller "install" "--dest" $INSTDIR
+
+    ; Run certgen tasks
+    SetOutPath $INSTDIR
+    !insertmacro QzInstaller "certgen" "" ""
+
+    ; Launch a non-elevated instance of ${project.name}
+    ${StdUtils.ExecShellAsUser} $0 "$INSTDIR\${project.filename}.exe" "open" ""
+SectionEnd
+
+!macro Init
+    ${If} ${RunningX64}
+        SetRegView 64
+        ${DisableX64FSRedirection}
+    ${EndIf}
+    ${If} $INSTDIR == ""
+        ${If} ${RunningX64}
+            StrCpy $INSTDIR "$PROGRAMFILES64\${project.name}"
+        ${Else}
+            StrCpy $INSTDIR "$PROGRAMFILES\${project.name}"
+        ${EndIf}
+    ${EndIf}
+!macroend
+
+Function .onInit
+    !insertmacro Init
+FunctionEnd

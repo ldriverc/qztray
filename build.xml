@@ -340,6 +340,12 @@
     </target>
 
     <target name="nsis" depends="get-target-arch,target-os-windows,distribute,provision,download-jre,build-exe"/>
+    <target name="web-nsis" depends="get-target-arch,target-os-windows,distribute,provision,download-jre">
+        <ant antfile="ant/windows/installer.xml" target="build-web-exe" inheritall="true"/>
+    </target>
+    <target name="zip-runtime">
+        <zip destfile="${out.dir}/runtime-2.2.6.zip" basedir="${dist.dir}/runtime"/>
+    </target>
     <target name="pkgbuild" depends="get-target-arch,target-os-mac,distribute,provision,download-jre,build-pkg"/>
     <target name="dmg" depends="get-target-arch,target-os-mac,distribute,provision,download-jre,build-dmg"/>
     <target name="makeself" depends="get-target-arch,target-os-linux,distribute,provision,download-jre,build-run"/>
