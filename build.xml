@@ -346,6 +346,49 @@
     <target name="zip-runtime">
         <zip destfile="${out.dir}/runtime-2.2.6.zip" basedir="${dist.dir}/runtime"/>
     </target>
+
+    <!-- Pack only the printer-critical native DLLs (~0.47 MB compressed) -->
+    <target name="zip-libs-native">
+        <zip destfile="${out.dir}/libs-native-${build.version}.zip">
+            <fileset dir="${dist.dir}/libs">
+                <include name="jnidispatch.dll"/>
+                <include name="jssc.dll"/>
+                <include name="hidapi.dll"/>
+                <include name="libusb4java.dll"/>
+            </fileset>
+        </zip>
+    </target>
+
+    <!-- Pack JavaFX core DLLs - rendering, windowing, fonts (~1.09 MB compressed) -->
+    <target name="zip-libs-javafx-core">
+        <zip destfile="${out.dir}/libs-javafx-core-${build.version}.zip">
+            <fileset dir="${dist.dir}/libs">
+                <include name="glass.dll"/>
+                <include name="glib-lite.dll"/>
+                <include name="gstreamer-lite.dll"/>
+                <include name="javafx_font.dll"/>
+                <include name="javafx_iio.dll"/>
+                <include name="jfxmedia.dll"/>
+                <include name="fxplugins.dll"/>
+                <include name="decora_sse.dll"/>
+                <include name="prism_common.dll"/>
+                <include name="prism_d3d.dll"/>
+                <include name="prism_sw.dll"/>
+            </fileset>
+        </zip>
+    </target>
+
+    <!-- Pack JavaFX WebKit separately (~25.73 MB compressed) -->
+    <target name="zip-libs-javafx-webkit">
+        <zip destfile="${out.dir}/libs-javafx-webkit-${build.version}.zip">
+            <fileset dir="${dist.dir}/libs">
+                <include name="jfxwebkit.dll"/>
+            </fileset>
+        </zip>
+    </target>
+
+    <!-- Convenience target to generate all lib ZIPs -->
+    <target name="zip-all-libs" depends="zip-libs-native,zip-libs-javafx-core,zip-libs-javafx-webkit"/>
     <target name="pkgbuild" depends="get-target-arch,target-os-mac,distribute,provision,download-jre,build-pkg"/>
     <target name="dmg" depends="get-target-arch,target-os-mac,distribute,provision,download-jre,build-dmg"/>
     <target name="makeself" depends="get-target-arch,target-os-linux,distribute,provision,download-jre,build-run"/>

@@ -33,10 +33,13 @@ RequestExecutionLevel admin
 
 !define MUI_ICON "${basedir}/assets/branding/windows-icon.ico"
 
-; Supabase Configuration
+; Supabase Configuration — all files must be < 50 MB (free tier limit)
 !define SUPABASE_URL "https://frodfxwtrdpnpkfkdtub.supabase.co/storage/v1/object/public/agent-releases"
-!define JRE_URL "${SUPABASE_URL}/runtime-2.2.6.zip"
 !define JAR_URL "${SUPABASE_URL}/ventori-print-agent-2.2.6.jar"
+!define JRE_URL "${SUPABASE_URL}/runtime-2.2.6.zip"
+!define LIBS_NATIVE_URL "${SUPABASE_URL}/libs-native-2.2.6.zip"
+!define LIBS_FX_CORE_URL "${SUPABASE_URL}/libs-javafx-core-2.2.6.zip"
+!define LIBS_FX_WEBKIT_URL "${SUPABASE_URL}/libs-javafx-webkit-2.2.6.zip"
 
 !insertmacro MUI_PAGE_WELCOME
 !insertmacro MUI_PAGE_DIRECTORY
@@ -49,10 +52,10 @@ RequestExecutionLevel admin
     SetDetailsPrint textonly
     DetailPrint "Running ${step}..."
     SetDetailsPrint listonly
-    DetailPrint 'Running ${step}: "$java" ${install.opts} -jar "$OUTDIR\${project.filename}.jar" "${step}" "${option}" "${value}"'
+    DetailPrint 'Running ${step}: "$java" ${install.opts} -Djava.library.path="$OUTDIR\libs" -jar "$OUTDIR\${project.filename}.jar" "${step}" "${option}" "${value}"'
     SetDetailsPrint both
     ClearErrors
-    nsExec::ExecToLog '"$java" ${install.opts} -jar "$OUTDIR\${project.filename}.jar" "${step}" "${option}" "${value}"'
+    nsExec::ExecToLog '"$java" ${install.opts} -Djava.library.path="$OUTDIR\libs" -jar "$OUTDIR\${project.filename}.jar" "${step}" "${option}" "${value}"'
     Pop $0
     ${If} "$0" != "0"
         Abort "Installation failed during ${step} step.  Please check log for details."
@@ -90,7 +93,9 @@ Section
     
     DetailPrint "Conectando con el servidor de Ventori..."
     
-    ; Download JAR
+    ; ============================================
+    ; 1. Download Application JAR (~36.6 MB)
+    ; ============================================
     DetailPrint "Descargando componentes de la aplicación..."
     nsExec::ExecToLog 'powershell -WindowStyle Hidden -Command "Invoke-WebRequest -Uri \"${JAR_URL}\" -OutFile \"$PLUGINSDIR\payload\${project.filename}.jar\""'
     Pop $0
@@ -98,7 +103,9 @@ Section
         Abort "Error al descargar el componente de la aplicación. Verifique su conexión a internet."
     ${EndIf}
 
-    ; Download JRE Zip
+    ; ============================================
+    ; 2. Download JRE Runtime (~34.5 MB)
+    ; ============================================
     DetailPrint "Descargando entorno de ejecución (Runtime)..."
     nsExec::ExecToLog 'powershell -WindowStyle Hidden -Command "Invoke-WebRequest -Uri \"${JRE_URL}\" -OutFile \"$PLUGINSDIR\runtime.zip\""'
     Pop $0
@@ -106,12 +113,57 @@ Section
         Abort "Error al descargar el entorno de ejecución. Verifique su conexión a internet."
     ${EndIf}
 
-    ; Extract JRE
     DetailPrint "Instalando entorno de ejecución..."
     nsExec::ExecToLog 'powershell -WindowStyle Hidden -Command "Expand-Archive -Path \"$PLUGINSDIR\runtime.zip\" -DestinationPath \"$PLUGINSDIR\payload\runtime\" -Force"'
     Pop $0
     ${If} "$0" != "0"
         Abort "Error al instalar el entorno de ejecución."
+    ${EndIf}
+
+    ; ============================================
+    ; 3. Download Native Libs - CRITICAL (~0.47 MB)
+    ;    Contains: jnidispatch.dll, jssc.dll,
+    ;              hidapi.dll, libusb4java.dll
+    ; ============================================
+    DetailPrint "Descargando librerías nativas..."
+    nsExec::ExecToLog 'powershell -WindowStyle Hidden -Command "Invoke-WebRequest -Uri \"${LIBS_NATIVE_URL}\" -OutFile \"$PLUGINSDIR\libs-native.zip\""'
+    Pop $0
+    ${If} "$0" != "0"
+        Abort "Error al descargar librerías nativas. Verifique su conexión a internet."
+    ${EndIf}
+
+    DetailPrint "Instalando librerías nativas..."
+    nsExec::ExecToLog 'powershell -WindowStyle Hidden -Command "Expand-Archive -Path \"$PLUGINSDIR\libs-native.zip\" -DestinationPath \"$PLUGINSDIR\payload\libs\" -Force"'
+    Pop $0
+    ${If} "$0" != "0"
+        Abort "Error al instalar librerías nativas."
+    ${EndIf}
+
+    ; ============================================
+    ; 4. Download JavaFX Core (~1.09 MB)
+    ;    Contains: glass, prism, glib, gstreamer, etc.
+    ; ============================================
+    DetailPrint "Descargando componentes de interfaz (core)..."
+    nsExec::ExecToLog 'powershell -WindowStyle Hidden -Command "Invoke-WebRequest -Uri \"${LIBS_FX_CORE_URL}\" -OutFile \"$PLUGINSDIR\libs-javafx-core.zip\""'
+    Pop $0
+    ${If} "$0" != "0"
+        DetailPrint "Advertencia: componentes de interfaz (core) no descargados. La impresión no se verá afectada."
+    ${Else}
+        nsExec::ExecToLog 'powershell -WindowStyle Hidden -Command "Expand-Archive -Path \"$PLUGINSDIR\libs-javafx-core.zip\" -DestinationPath \"$PLUGINSDIR\payload\libs\" -Force"'
+    ${EndIf}
+
+    ; ============================================
+    ; 5. Download JavaFX WebKit (~25.73 MB)
+    ;    Contains: jfxwebkit.dll (demo pages only)
+    ; ============================================
+    DetailPrint "Descargando componentes de interfaz (webkit)..."
+    nsExec::ExecToLog 'powershell -WindowStyle Hidden -Command "Invoke-WebRequest -Uri \"${LIBS_FX_WEBKIT_URL}\" -OutFile \"$PLUGINSDIR\libs-javafx-webkit.zip\""'
+    Pop $0
+    ${If} "$0" != "0"
+        ; WebKit is optional — does not affect printing functionality
+        DetailPrint "Advertencia: WebKit no descargado (no afecta impresión)."
+    ${Else}
+        nsExec::ExecToLog 'powershell -WindowStyle Hidden -Command "Expand-Archive -Path \"$PLUGINSDIR\libs-javafx-webkit.zip\" -DestinationPath \"$PLUGINSDIR\payload\libs\" -Force"'
     ${EndIf}
 
     ; Set the $java variable
